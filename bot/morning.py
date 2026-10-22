@@ -61,12 +61,23 @@ def build():
     lines.append("")
 
     # 뉴스 헤드라인
-    news = fetch_news(FEEDS, hours=14)[:6]
+    news, per_src = [], {}
+    for n in fetch_news(FEEDS, hours=14):
+        s = n["source"]
+        if per_src.get(s, 0) >= 2:  # 한 언론사는 최대 2개
+            continue
+        per_src[s] = per_src.get(s, 0) + 1
+        title = n["title"]
+        if s and title.endswith(f" - {s}"):  # 구글뉴스 제목 끝 '- 언론사' 중복 제거
+            title = title[: -len(s) - 3]
+        news.append((title, n["link"], s))
+        if len(news) == 6:
+            break
     if news:
         lines.append("<b>📰 밤사이 헤드라인</b>")
-        for n in news:
-            src = f" — {esc(n['source'])}" if n["source"] else ""
-            lines.append(f'• <a href="{esc(n["link"])}">{esc(n["title"])}</a>{src}')
+        for title, link, s in news:
+            src = f" — {esc(s)}" if s else ""
+            lines.append(f'• <a href="{esc(link)}">{esc(title)}</a>{src}')
         lines.append("")
 
     lines.append("오늘 눈에 띄는 숫자가 있다면 💬 자유토론에서 같이 읽어요.")
